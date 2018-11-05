@@ -12,23 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+add_executable(resonance_audio_cli resonance_audio_cli.cpp $<TARGET_OBJECTS:ResonanceAudioObj>
+                                                           $<TARGET_OBJECTS:SadieHrtfsObj>
+                                                           $<TARGET_OBJECTS:PffftObj>)
 
-if (BUILD_VST_MONITOR_PLUGIN)
-    add_subdirectory(vst)
-endif (BUILD_VST_MONITOR_PLUGIN)
-
-if (BUILD_FMOD_PLUGIN)
-    add_subdirectory(fmod)
-endif (BUILD_FMOD_PLUGIN)
-
-if (BUILD_WWISE_AUTHORING_PLUGIN OR BUILD_WWISE_SOUND_ENGINE_PLUGIN)
-    add_subdirectory(wwise)
-endif (BUILD_WWISE_AUTHORING_PLUGIN OR BUILD_WWISE_SOUND_ENGINE_PLUGIN)
-
-if (BUILD_UNITY_PLUGIN OR BUILD_GEOMETRICAL_ACOUSTICS_TESTS)
-    add_subdirectory(unity)
-endif (BUILD_UNITY_PLUGIN OR BUILD_GEOMETRICAL_ACOUSTICS_TESTS)
-
-if (BUILD_COMMAND_LINE_INTERFACE)
-    add_subdirectory(cli)
-endif (BUILD_COMMAND_LINE_INTERFACE)
+target_include_directories(resonance_audio_cli PRIVATE "${EIGEN3_INCLUDE_DIR}/")
+target_include_directories(resonance_audio_cli PRIVATE "${PFFFT_INCLUDE_DIR}/")
+target_include_directories(resonance_audio_cli PRIVATE "${PROJECT_SOURCE_DIR}/resonance_audio/")
