@@ -72,14 +72,27 @@ int main(int argc, char const* argv[]) {
       vraudio::CreateResonanceAudioApi(vraudio::kNumStereoChannels,
                                        kNumFramesPerBuffer,
                                        wav->GetSampleRateHz()));
+  vraudio::RoomProperties room_properties;
+  room_properties.dimensions[0] = 30;
+  room_properties.dimensions[1] = 30;
+  room_properties.dimensions[2] = 30;
+  room_properties.material_names[0] = vraudio::MaterialName::kMetal;
+  room_properties.material_names[1] = vraudio::MaterialName::kMetal;
+  room_properties.material_names[2] = vraudio::MaterialName::kMetal;
+  room_properties.material_names[0] = vraudio::MaterialName::kMetal;
+  room_properties.material_names[1] = vraudio::MaterialName::kMetal;
+  room_properties.material_names[2] = vraudio::MaterialName::kMetal;
+  api->SetReverbProperties(vraudio::ComputeReverbProperties(room_properties));
+  api->SetReflectionProperties(vraudio::ComputeReflectionProperties(room_properties));
 
   // Initialize Sound Source
-  vraudio::SourceId stereo_id = api->CreateStereoSource(wav->GetNumChannels());
-  std::cout << "CreateStereoSource" << std::endl;
-  // vraudio::SourceId stereo_id =
-  //     api->CreateSoundObjectSource(vraudio::RenderingMode());
-  // api->SetSourcePosition(stereo_id, 10, 10, 10);
-  // std::cout << "CreateSoundObjectSource" << std::endl;
+  // vraudio::SourceId stereo_id = api->CreateStereoSource(wav->GetNumChannels());
+  // std::cout << "CreateStereoSource" << std::endl;
+  
+  vraudio::SourceId stereo_id =
+      api->CreateSoundObjectSource(vraudio::RenderingMode());
+  api->SetSourcePosition(stereo_id, 2, -2, 0);
+  
 
   //// Render output sound
   // Number of buffers needed (rounded up)
