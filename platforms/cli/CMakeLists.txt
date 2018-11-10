@@ -11,11 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+
+find_package(Boost COMPONENTS program_options REQUIRED)
+
 add_executable(resonance_audio_cli resonance_audio_cli.cpp $<TARGET_OBJECTS:ResonanceAudioObj>
                                                            $<TARGET_OBJECTS:SadieHrtfsObj>
                                                            $<TARGET_OBJECTS:PffftObj>)
+target_link_libraries(resonance_audio_cli ${Boost_LIBRARIES})
 
 target_include_directories(resonance_audio_cli PRIVATE "${EIGEN3_INCLUDE_DIR}/")
 target_include_directories(resonance_audio_cli PRIVATE "${PFFFT_INCLUDE_DIR}/")
 target_include_directories(resonance_audio_cli PRIVATE "${PROJECT_SOURCE_DIR}/resonance_audio/")
+target_include_directories(resonance_audio_cli PRIVATE "${Boost_INCLUDE_DIR}")

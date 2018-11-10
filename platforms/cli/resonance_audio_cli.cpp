@@ -1,11 +1,19 @@
 #include <fstream>
 #include <iostream>
 #include <memory>
+#include <string>
+#include <unordered_map>
+
+#include <boost/program_options.hpp>
 
 #include <api/resonance_audio_api.h>
 #include <platforms/common/room_effects_utils.h>
 #include <platforms/common/room_properties.h>
 #include <utils/wav.h>
+
+namespace po = boost::program_options;
+
+constexpr size_t kNumFramesPerBuffer = 32;
 
 template <typename Word>
 std::ostream& little_endian_write(std::ostream& out_stream, const Word value,
@@ -54,10 +62,73 @@ void write_wav_file(const std::string& file_name,
   f.close();
 }
 
+bool verify_material_names(std::vector<int>& material_names) {
+  for (const auto& n : material_names) {
+    if (n < 0 or n >= vraudio::kNumMaterialNames) return false;
+  }
+  return true;
+}
+
 int main(int argc, char const* argv[]) {
-  constexpr size_t kNumFramesPerBuffer = 32;
+  std::string input_wav_path;
+  std::string output_wav_path;
+  std::vector<float> position;
+  std::vector<float> dimensions;
+  std::vector<int> material_names;
+
+  // Declare the supported options.
+  po::options_description desc("Usage");
+  // clang-format off
+  desc.add_options()
+      ("help,h", "produce help message")
+      ("input-file,i", po::value<std::string>(&input_wav_path)->required(), "input wav file")
+      ("output-file,o", po::value<std::string>()->required(), "output wav file")
+      ("position,p", po::value<std::vector<float>>(&position)->required()->multitoken(), "position of sound and head: x y z")
+      ("dimensions,d", po::value<std::vector<float>>(&dimensions)->required()->multitoken(), "dimensions of room: x y z")
+      ("materials,m", po::value<std::vector<int>>(&material_names)->required()->multitoken(), "wall materials: x-pos x-neg y-pos y-neg z-pos z-neg")
+      ;
+  // clang-format on
+  
+
+  po::variables_map vm;
+  po::store(po::parse_command_line(argc, argv, desc), vm);
+  if (vm.count("help")) {
+    std::cout << desc << std::endl;
+    return 1;
+  }
+  po::notify(vm);
+  std::cout << input_wav_path << std::endl;
+  for (const auto& m : position) {
+    std::cout << m << " ";
+  }
+  std::cout <<std::endl;
+  for (const auto& m : dimensions) {
+    std::cout << m << " ";
+  }
+  std::cout <<std::endl;
+  for (const auto& m : material_names) {
+    std::cout << m << " ";
+  }
+  std::cout <<std::endl;
+  if (position.size() != 3) {
+    std::cout << "Need 3 floats (x y z) for position." << std::endl;
+    std::cout << desc << std::endl;
+    return 1;
+  } else if (dimensions.size() != 3) {
+    std::cout << "Need 3 floats (x y z) for dimensions." << std::endl;
+    std::cout << desc << std::endl;
+    return 1;
+  } else if (material_names.size() != 6 or
+             not verify_material_names(material_names)) {
+    std::cout << "Need 6 ints (x-pos x-neg y-pos y-neg z-pos z-neg) for "
+                 "materials of each wall. The materials are ints between 0 and "
+              << vraudio::kNumMaterialNames << "." << std::endl;
+    std::cout << desc << std::endl;
+    return 1;
+  }
+
   // Load wav file
-  std::ifstream input_wav_stream(argv[1], std::ios::binary);
+  std::ifstream input_wav_stream(input_wav_path, std::ios::binary);
   std::unique_ptr<const vraudio::Wav> wav =
       vraudio::Wav::CreateOrNull(&input_wav_stream);
   const size_t kNumInputFrames =
@@ -73,26 +144,18 @@ int main(int argc, char const* argv[]) {
                                        kNumFramesPerBuffer,
                                        wav->GetSampleRateHz()));
   vraudio::RoomProperties room_properties;
-  room_properties.dimensions[0] = 30;
-  room_properties.dimensions[1] = 30;
-  room_properties.dimensions[2] = 30;
-  room_properties.material_names[0] = vraudio::MaterialName::kMetal;
-  room_properties.material_names[1] = vraudio::MaterialName::kMetal;
-  room_properties.material_names[2] = vraudio::MaterialName::kMetal;
-  room_properties.material_names[0] = vraudio::MaterialName::kMetal;
-  room_properties.material_names[1] = vraudio::MaterialName::kMetal;
-  room_properties.material_names[2] = vraudio::MaterialName::kMetal;
+  std::copy(dimensions.begin(), dimensions.end(), room_properties.dimensions);
+  for (size_t i = 0; i < material_names.size(); ++i)
+    room_properties.material_names[i] =
+        static_cast<vraudio::MaterialName>(material_names[i]);
   api->SetReverbProperties(vraudio::ComputeReverbProperties(room_properties));
-  api->SetReflectionProperties(vraudio::ComputeReflectionProperties(room_properties));
+  api->SetReflectionProperties(
+      vraudio::ComputeReflectionProperties(room_properties));
 
-  // Initialize Sound Source
-  // vraudio::SourceId stereo_id = api->CreateStereoSource(wav->GetNumChannels());
-  // std::cout << "CreateStereoSource" << std::endl;
-  
   vraudio::SourceId stereo_id =
       api->CreateSoundObjectSource(vraudio::RenderingMode());
-  api->SetSourcePosition(stereo_id, 2, -2, 0);
-  
+  api->SetSourcePosition(stereo_id, position[0], position[1], position[2]);
+  api->SetHeadPosition(position[0], position[1], position[2]);
 
   //// Render output sound
   // Number of buffers needed (rounded up)
@@ -131,6 +194,6 @@ int main(int argc, char const* argv[]) {
   // Remove extra frames from last buffer
   output_samples.resize(kNumInputFrames * vraudio::kNumStereoChannels);
 
-  write_wav_file("test.wav", output_samples, vraudio::kNumStereoChannels,
+  write_wav_file(output_wav_path, output_samples, vraudio::kNumStereoChannels,
                  wav->GetSampleRateHz());
 }
