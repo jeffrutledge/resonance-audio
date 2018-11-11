@@ -13,7 +13,7 @@
 
 namespace po = boost::program_options;
 
-constexpr size_t kNumFramesPerBuffer = 32;
+constexpr size_t kNumFramesPerBuffer = 256;
 
 template <typename Word>
 std::ostream& little_endian_write(std::ostream& out_stream, const Word value,
@@ -34,6 +34,7 @@ void write_wav_file(const std::string& file_name,
 
   std::ofstream f(file_name,
                   std::ios::out | std::ios::trunc | std::ios::binary);
+  std::cout << "writing to: " << file_name << std::endl;
   f.imbue(std::locale::classic());
 
   // RIFF CHUNK
@@ -82,7 +83,7 @@ int main(int argc, char const* argv[]) {
   desc.add_options()
       ("help,h", "produce help message")
       ("input-file,i", po::value<std::string>(&input_wav_path)->required(), "input wav file")
-      ("output-file,o", po::value<std::string>()->required(), "output wav file")
+      ("output-file,o", po::value<std::string>(&output_wav_path)->required(), "output wav file")
       ("position,p", po::value<std::vector<float>>(&position)->required()->multitoken(), "position of sound and head: x y z")
       ("dimensions,d", po::value<std::vector<float>>(&dimensions)->required()->multitoken(), "dimensions of room: x y z")
       ("materials,m", po::value<std::vector<int>>(&material_names)->required()->multitoken(), "wall materials: x-pos x-neg y-pos y-neg z-pos z-neg")
