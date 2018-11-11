@@ -1,3 +1,5 @@
+#define REPORT_TIME
+
 #include <chrono>
 #include <fstream>
 #include <iomanip>
@@ -5,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include "timing_util.hpp"
 
 #include <boost/program_options.hpp>
 
@@ -71,51 +74,8 @@ bool verify_material_names(std::vector<int>& material_names) {
   return true;
 }
 
-std::vector<std::string> time_point_names;
-std::vector<std::chrono::high_resolution_clock::time_point> time_points;
-
-bool write_time_deltas(
-    const std::vector<std::string>& time_point_names,
-    const std::vector<std::chrono::high_resolution_clock::time_point>&
-        time_points) {
-  const size_t kNumericalWidth = 15;
-  const size_t kNameWidth = 30;
-  if (time_point_names.size() != time_points.size()) {
-    return false;
-  } else {
-    // Header
-    std::cout << std::setw(kNameWidth + 2) << "Interval Name |";
-    std::cout << std::setw(kNumericalWidth + 2) << "last section |";
-    std::cout << std::setw(kNumericalWidth + 2) << "from start |";
-    std::cout << std::setw(kNumericalWidth + 2) << "percentage" << std::endl;
-
-    // Data
-    auto total_time = std::chrono::duration_cast<std::chrono::microseconds>(
-                          time_points.back() - time_points.front())
-                          .count();
-    for (size_t i = 1; i < time_point_names.size(); ++i) {
-      auto last_section = std::chrono::duration_cast<std::chrono::microseconds>(
-                              time_points[i] - time_points[i - 1])
-                              .count();
-      auto until_now = std::chrono::duration_cast<std::chrono::microseconds>(
-                           time_points[i] - time_points[0])
-                           .count();
-      double percentage =
-          static_cast<double>(last_section) / static_cast<double>(total_time);
-      std::cout << std::setw(kNameWidth) << time_point_names[i] << " |";
-      std::cout << std::setw(kNumericalWidth) << last_section << " |";
-      std::cout << std::setw(kNumericalWidth) << until_now << " |";
-      std::cout << std::setw(kNumericalWidth) << std::fixed << percentage * 100 << std::endl;
-    }
-  }
-  return true;
-}
-
 int main(int argc, char const* argv[]) {
-  time_point_names.reserve(100);
-  time_points.reserve(100);
-  time_point_names.push_back("main start");
-  time_points.push_back(std::chrono::high_resolution_clock::now());
+  TIME_POINT(main start)
 
   std::string input_wav_path;
   std::string output_wav_path;
@@ -174,23 +134,20 @@ int main(int argc, char const* argv[]) {
   }
 
   // Load wav file
-  time_point_names.push_back("start wav construction");
-  time_points.push_back(std::chrono::high_resolution_clock::now());
+  TIME_POINT(start wav construction)
   std::ifstream input_wav_stream(input_wav_path, std::ios::binary);
   std::unique_ptr<const vraudio::Wav> wav =
       vraudio::Wav::CreateOrNull(&input_wav_stream);
   const size_t kNumInputFrames =
       wav->interleaved_samples().size() / wav->GetNumChannels();
-  time_point_names.push_back("end wav construction");
-  time_points.push_back(std::chrono::high_resolution_clock::now());
+  TIME_POINT(end wav construction)
 
   // Print wav file info
   std::cout << "Channels: " << wav->GetNumChannels() << std::endl;
   std::cout << "SampleRateHz: " << wav->GetSampleRateHz() << std::endl;
 
   // Initialize Resonance Audio
-  time_point_names.push_back("start ra api initialization");
-  time_points.push_back(std::chrono::high_resolution_clock::now());
+  TIME_POINT(start ra api init)
   std::unique_ptr<vraudio::ResonanceAudioApi> api(
       vraudio::CreateResonanceAudioApi(vraudio::kNumStereoChannels,
                                        kNumFramesPerBuffer,
@@ -208,13 +165,11 @@ int main(int argc, char const* argv[]) {
       api->CreateSoundObjectSource(vraudio::RenderingMode());
   api->SetSourcePosition(stereo_id, position[0], position[1], position[2]);
   api->SetHeadPosition(position[0], position[1], position[2]);
-  time_point_names.push_back("end ra api initialization");
-  time_points.push_back(std::chrono::high_resolution_clock::now());
+  TIME_POINT(end ra api init)
 
   //// Render output sound
   // Number of buffers needed (rounded up)
-  time_point_names.push_back("start render");
-  time_points.push_back(std::chrono::high_resolution_clock::now());
+  TIME_POINT(start render)
   const size_t kNumBuffersToRender =
       (kNumInputFrames + kNumFramesPerBuffer - 1) / kNumFramesPerBuffer;
 
@@ -249,13 +204,11 @@ int main(int argc, char const* argv[]) {
   }
   // Remove extra frames from last buffer
   output_samples.resize(kNumInputFrames * vraudio::kNumStereoChannels);
-  time_point_names.push_back("end render");
-  time_points.push_back(std::chrono::high_resolution_clock::now());
+  TIME_POINT(end render)
 
   write_wav_file(output_wav_path, output_samples, vraudio::kNumStereoChannels,
                  wav->GetSampleRateHz());
-  time_point_names.push_back("end write wav");
-  time_points.push_back(std::chrono::high_resolution_clock::now());
+  TIME_POINT(end wav write)
 
-  write_time_deltas(time_point_names, time_points);
+  REPORT_TIME_DELTAS
 }
