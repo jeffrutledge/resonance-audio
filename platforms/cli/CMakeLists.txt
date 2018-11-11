@@ -23,3 +23,13 @@ target_include_directories(resonance_audio_cli PRIVATE "${EIGEN3_INCLUDE_DIR}/")
 target_include_directories(resonance_audio_cli PRIVATE "${PFFFT_INCLUDE_DIR}/")
 target_include_directories(resonance_audio_cli PRIVATE "${PROJECT_SOURCE_DIR}/resonance_audio/")
 target_include_directories(resonance_audio_cli PRIVATE "${Boost_INCLUDE_DIR}")
+
+add_executable(timing timing.cpp $<TARGET_OBJECTS:ResonanceAudioObj>
+                                                           $<TARGET_OBJECTS:SadieHrtfsObj>
+                                                           $<TARGET_OBJECTS:PffftObj>)
+target_link_libraries(timing ${Boost_LIBRARIES})
+
+target_include_directories(timing PRIVATE "${EIGEN3_INCLUDE_DIR}/")
+target_include_directories(timing PRIVATE "${PFFFT_INCLUDE_DIR}/")
+target_include_directories(timing PRIVATE "${PROJECT_SOURCE_DIR}/resonance_audio/")
+target_include_directories(timing PRIVATE "${Boost_INCLUDE_DIR}")
