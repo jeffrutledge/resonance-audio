@@ -107,6 +107,8 @@ The script provides the following flags:
 
 -   t=|--target=
     -   `RESONANCE_AUDIO_API`: Builds the Resonance Audio API
+    -   `RESONANCE_AUDIO_CLI`: Builds the Resonance Audio CLI make files
+            (also run `make` in `./build/platforms/cli` to build executable)
     -   `RESONANCE_AUDIO_TESTS`: Runs the Resonance Audio unit tests
     -   `GEOMETRICAL_ACOUSTICS_TESTS`: Runs the geometrical acoustics specific
         unit tests.

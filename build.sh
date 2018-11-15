@@ -39,6 +39,7 @@ function show_help()
 Please select a build target:
 
   -t= | --target=[RESONANCE_AUDIO_API|         # Resonance Audio API C/C++ library
+                  RESONANCE_AUDIO_CLI|         # Resonance Audio CLI
                   RESONANCE_AUDIO_TESTS|       # Resonance Audio unit tests
                   GEOMETRICAL_ACOUSTICS_TESTS| # Geometrical Acoustics unit tests
                   UNITY_PLUGIN|                # Resonance Audio Unity plugin
